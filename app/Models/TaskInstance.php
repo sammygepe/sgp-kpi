@@ -11,6 +11,10 @@ class TaskInstance extends Model
     protected $fillable = [
         'master_id',
         'judul_spesifik',
+        'jenis',
+        'recurrence_type',
+        'recurrence_day',
+        'recurrence_month',
         'deskripsi',
         'bobot',
         'deadline',

@@ -60,6 +60,7 @@ class TaskController extends Controller
         $validated = $request->validate([
             'judul_spesifik' => 'required|string|max:255',
             'deskripsi' => 'nullable|string',
+            'jenis' => 'required|in:rutin,proyek',
             'bobot' => 'required|integer|min:1|max:10',
             'deadline' => 'required|date|after:today',
             'subtasks' => 'nullable|array',
@@ -69,6 +70,7 @@ class TaskController extends Controller
         $task = TaskInstance::create([
             'judul_spesifik' => $validated['judul_spesifik'],
             'deskripsi' => $validated['deskripsi'],
+            'jenis' => $validated['jenis'],
             'bobot' => $validated['bobot'],
             'deadline' => $validated['deadline'],
             'assignee_id' => auth()->id(),
