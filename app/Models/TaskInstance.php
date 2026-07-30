@@ -15,6 +15,7 @@ class TaskInstance extends Model
         'recurrence_type',
         'recurrence_day',
         'recurrence_month',
+        'generate_offset_days',
         'deskripsi',
         'bobot',
         'deadline',
