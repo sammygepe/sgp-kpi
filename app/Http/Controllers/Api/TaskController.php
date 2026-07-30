@@ -341,4 +341,38 @@ class TaskController extends Controller
             'data' => $log,
         ]);
     }
+
+    public function getTask($id)
+    {
+        $task = TaskInstance::with(['subtasks', 'assignee', 'assignor'])
+            ->findOrFail($id);
+
+        // Cek apakah user punya akses (assignee atau atasan)
+        if (auth()->id() !== $task->assignee_id && auth()->user()->role !== 'atasan') {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        return response()->json($task);
+    }
+
+    public function updateTask(Request $request, $id)
+    {
+        $task = TaskInstance::findOrFail($id);
+
+        // Cek akses: hanya assignee yang bisa mengupdate catatan
+        if (auth()->id() !== $task->assignee_id) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        $validated = $request->validate([
+            'catatan_harian' => 'nullable|string',
+        ]);
+
+        $task->update($validated);
+
+        return response()->json([
+            'message' => 'Catatan updated successfully',
+            'data' => $task
+        ]);
+    }
 }

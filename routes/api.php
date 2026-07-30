@@ -31,4 +31,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Progress Log
     Route::post('/tasks/{id}/progress-log', [TaskController::class, 'addProgressLog']);
+
+    Route::get('/tasks/{id}', [TaskController::class, 'getTask']);
+    Route::put('/tasks/{id}', [TaskController::class, 'updateTask']);
 });

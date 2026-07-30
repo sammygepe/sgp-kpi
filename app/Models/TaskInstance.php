@@ -29,6 +29,7 @@ class TaskInstance extends Model
         'nilai',
         'faktor_waktu',
         'skor_akhir',
+        'catatan_harian',
     ];
 
     protected $casts = [
