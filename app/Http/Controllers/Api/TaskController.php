@@ -260,7 +260,7 @@ class TaskController extends Controller
         $user = auth()->user();
         $role = $user->role;
 
-        $query = TaskInstance::with(['assignee', 'assignor', 'master']);
+        $query = TaskInstance::with(['assignee', 'assignor', 'master', 'subtasks']);
 
         if ($role === 'atasan' || $role === 'admin') {
             // Lihat semua tugas dari bawahannya
