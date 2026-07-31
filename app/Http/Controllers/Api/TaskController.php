@@ -69,6 +69,7 @@ class TaskController extends Controller
             'deadline' => 'required|date|after_or_equal:today',
             'subtasks' => 'nullable|array',
             'subtasks.*.judul' => 'required|string|max:255',
+            'tanggal_mulai' => 'nullable|date|before_or_equal:deadline',
         ]);
 
         $task = TaskInstance::create([
@@ -86,6 +87,7 @@ class TaskController extends Controller
             'initiation_type' => 'proposal',
             'status' => 'proposed',
             'nilai' => 100,
+            'tanggal_mulai' => $validated['tanggal_mulai'] ?? null,
         ]);
 
         // Jika ada subtasks
