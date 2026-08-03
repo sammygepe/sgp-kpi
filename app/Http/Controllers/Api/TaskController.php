@@ -466,4 +466,67 @@ class TaskController extends Controller
             'data' => $task
         ]);
     }
+
+    public function resubmitTask(Request $request, $id)
+    {
+        $oldTask = TaskInstance::findOrFail($id);
+
+        // Pastikan tugas ini milik staf yang login
+        if ($oldTask->assignee_id !== auth()->id()) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        // Pastikan tugas berstatus rejected
+        if ($oldTask->status !== 'rejected') {
+            return response()->json(['message' => 'Task is not rejected'], 422);
+        }
+
+        $validated = $request->validate([
+            'judul_spesifik' => 'required|string|max:255',
+            'deskripsi' => 'nullable|string',
+            'jenis' => 'required|in:rutin,proyek',
+            'recurrence_type' => 'nullable|in:daily,weekly,monthly,yearly',
+            'recurrence_day' => 'nullable|integer|min:1|max:31',
+            'recurrence_month' => 'nullable|integer|min:1|max:12',
+            'generate_offset_days' => 'nullable|integer|min:0|max:365',
+            'bobot' => 'required|integer|min:1|max:10',
+            'deadline' => 'required|date|after_or_equal:today',
+            'subtasks' => 'nullable|array',
+            'subtasks.*.judul' => 'required|string|max:255',
+        ]);
+
+        // Buat usulan baru (copy dari data yang diedit)
+        $newTask = TaskInstance::create([
+            'judul_spesifik' => $validated['judul_spesifik'],
+            'deskripsi' => $validated['deskripsi'],
+            'jenis' => $validated['jenis'],
+            'recurrence_type' => $validated['recurrence_type'] ?? null,
+            'recurrence_day' => $validated['recurrence_day'] ?? null,
+            'recurrence_month' => $validated['recurrence_month'] ?? null,
+            'generate_offset_days' => $validated['generate_offset_days'] ?? 0,
+            'bobot' => $validated['bobot'],
+            'deadline' => $validated['deadline'],
+            'assignee_id' => auth()->id(),
+            'assignor_id' => auth()->id(),
+            'initiation_type' => 'proposal',
+            'status' => 'proposed',
+            'nilai' => 100,
+        ]);
+
+        // Copy subtasks
+        if (!empty($validated['subtasks'])) {
+            foreach ($validated['subtasks'] as $subtask) {
+                Subtask::create([
+                    'task_instance_id' => $newTask->id,
+                    'judul' => $subtask['judul'],
+                    'is_done' => false,
+                ]);
+            }
+        }
+
+        return response()->json([
+            'message' => 'Task resubmitted successfully',
+            'data' => $newTask->load('subtasks'),
+        ], 201);
+    }
 }

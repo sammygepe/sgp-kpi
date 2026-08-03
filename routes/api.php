@@ -39,4 +39,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/notifications', [NotificationController::class, 'index']);
     Route::put('/notifications/{id}/read', [NotificationController::class, 'markAsRead']);
     Route::put('/notifications/mark-all-read', [NotificationController::class, 'markAllAsRead']);
+
+    // resubmitTask from rejected
+    Route::post('/tasks/{id}/resubmit', [TaskController::class, 'resubmitTask']);
 });
