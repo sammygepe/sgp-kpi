@@ -10,17 +10,27 @@ class UserSeeder extends Seeder
 {
     public function run(): void
     {
-        // 1. Atasan (Rose)
+        // 1. Admin (akun admin khusus)
+        $admin = User::create([
+            'name' => 'Admin Utama',
+            'email' => 'admin@kpi.com',
+            'password' => Hash::make('password123'),
+            'role' => 'admin',
+            'jabatan' => 'Super Administrator',
+            'nik' => 'ADM001',
+        ]);
+
+        // 2. Atasan (Rose) - tetap atasan biasa
         $rose = User::create([
             'name' => 'Rose Atasan',
             'email' => 'rose@kpi.com',
             'password' => Hash::make('123'),
-            'role' => 'atasan',
+            'role' => 'atasan', // <-- TETAP ATASAN
             'jabatan' => 'Manager Operasional',
             'nik' => 'AT001',
         ]);
 
-        // 2. Staff 1 (Upin)
+        // 3. Staff 1 (Upin) - supervisor Rose
         $upin = User::create([
             'name' => 'Upin Staff',
             'email' => 'upin@kpi.com',
@@ -31,7 +41,7 @@ class UserSeeder extends Seeder
             'supervisor_id' => $rose->id,
         ]);
 
-        // 3. Staff 2 (Ipin)
+        // 4. Staff 2 (Ipin) - supervisor Rose
         $ipin = User::create([
             'name' => 'Ipin Staff',
             'email' => 'ipin@kpi.com',
