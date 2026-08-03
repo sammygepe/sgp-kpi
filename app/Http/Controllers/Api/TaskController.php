@@ -147,6 +147,16 @@ class TaskController extends Controller
         }
         $task->save();
 
+        // === AUTO LOG ===
+        ProgressLog::create([
+            'task_instance_id' => $task->id,
+            'tanggal' => now()->toDateString(),
+            'progress' => $task->progress ?? 0,
+            'catatan' => $task->catatan_harian ?? '',
+            'activity_type' => 'approve',
+            'description' => "Tugas di-{$task->status} oleh atasan" . ($validated['reason'] ? ": {$validated['reason']}" : ''),
+        ]);
+
         return response()->json([
             'message' => "Task {$task->status}",
             'data' => $task,
@@ -190,6 +200,16 @@ class TaskController extends Controller
 
         $task->faktor_waktu = $result->faktor ?? 1.0;
         $task->save();
+
+        // === AUTO LOG ===
+        ProgressLog::create([
+            'task_instance_id' => $task->id,
+            'tanggal' => now()->toDateString(),
+            'progress' => $task->progress ?? 100,
+            'catatan' => $task->catatan_harian ?? '',
+            'activity_type' => 'submit',
+            'description' => 'Tugas disubmit ke atasan',
+        ]);
 
         return response()->json([
             'message' => 'Task submitted successfully',
@@ -239,6 +259,16 @@ class TaskController extends Controller
 
         $task->skor_akhir = $result->skor ?? 0;
         $task->save();
+
+        // === AUTO LOG ===
+        ProgressLog::create([
+            'task_instance_id' => $task->id,
+            'tanggal' => now()->toDateString(),
+            'progress' => 100,
+            'catatan' => $task->catatan_harian ?? '',
+            'activity_type' => 'score',
+            'description' => "Tugas dinilai dengan skor {$task->skor_akhir} (nilai: {$task->nilai})" . ($validated['reason'] ? ": {$validated['reason']}" : ''),
+        ]);
 
         return response()->json([
             'message' => 'Task scored successfully',
@@ -290,8 +320,8 @@ class TaskController extends Controller
     public function toggleSubtask(Request $request, $subtaskId)
     {
         $subtask = Subtask::findOrFail($subtaskId);
-
         $task = $subtask->taskInstance;
+
         if ($task->assignee_id !== auth()->id()) {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
@@ -299,11 +329,21 @@ class TaskController extends Controller
         $subtask->is_done = !$subtask->is_done;
         $subtask->save();
 
-        // Update progress task
+        // Update progress
         $total = $task->subtasks()->count();
         $done = $task->subtasks()->where('is_done', true)->count();
         $task->progress = ($total > 0) ? round(($done / $total) * 100) : 0;
         $task->save();
+
+        // === AUTO LOG ===
+        ProgressLog::create([
+            'task_instance_id' => $task->id,
+            'tanggal' => now()->toDateString(),
+            'progress' => $task->progress,
+            'catatan' => $task->catatan_harian ?? '',
+            'activity_type' => 'subtask',
+            'description' => "Subtask '{$subtask->judul}' " . ($subtask->is_done ? 'selesai' : 'dibatalkan'),
+        ]);
 
         return response()->json([
             'message' => 'Subtask updated',
@@ -346,7 +386,7 @@ class TaskController extends Controller
 
     public function getTask($id)
     {
-        $task = TaskInstance::with(['subtasks', 'assignee', 'assignor'])
+        $task = TaskInstance::with(['subtasks', 'assignee', 'assignor', 'progressLogs'])
             ->findOrFail($id);
 
         // Cek apakah user punya akses (assignee atau atasan)
@@ -361,7 +401,6 @@ class TaskController extends Controller
     {
         $task = TaskInstance::findOrFail($id);
 
-        // Cek akses: hanya assignee yang bisa mengupdate catatan
         if (auth()->id() !== $task->assignee_id) {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
@@ -370,7 +409,20 @@ class TaskController extends Controller
             'catatan_harian' => 'nullable|string',
         ]);
 
+        $oldNote = $task->catatan_harian;
         $task->update($validated);
+
+        // === AUTO LOG ===
+        if ($validated['catatan_harian'] !== $oldNote) {
+            ProgressLog::create([
+                'task_instance_id' => $task->id,
+                'tanggal' => now()->toDateString(),
+                'progress' => $task->progress ?? 0,
+                'catatan' => $validated['catatan_harian'],
+                'activity_type' => 'note',
+                'description' => 'Memperbarui catatan harian',
+            ]);
+        }
 
         return response()->json([
             'message' => 'Catatan updated successfully',

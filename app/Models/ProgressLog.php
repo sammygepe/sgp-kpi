@@ -12,6 +12,8 @@ class ProgressLog extends Model
         'tanggal',
         'progress',
         'catatan',
+        'activity_type',
+        'description',
     ];
 
     protected $casts = [
