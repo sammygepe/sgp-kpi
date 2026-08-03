@@ -431,30 +431,31 @@ class TaskController extends Controller
         ]);
 
         $oldNote = $task->catatan_harian;
+        $newNote = $validated['catatan_harian'] ?? '';
         $task->update($validated);
 
         // === AUTO LOG DENGAN PERUBAHAN ===
-        if ($validated['catatan_harian'] !== $oldNote) {
-            $description = "Memperbarui catatan harian";
+        if ($newNote !== $oldNote) {
+            $description = "📝 Memperbarui catatan harian";
 
-            // Jika ada perubahan dari kosong → terisi
-            if (empty($oldNote) && !empty($validated['catatan_harian'])) {
-                $description = "Menambahkan catatan harian: " . substr($validated['catatan_harian'], 0, 50) . (strlen($validated['catatan_harian']) > 50 ? '...' : '');
+            // Jika catatan baru diisi (dari kosong → terisi)
+            if (empty($oldNote) && !empty($newNote)) {
+                $description = "📝 Menambahkan catatan harian:\n" . $newNote;
             }
-            // Jika ada perubahan dari terisi → berubah
-            else if (!empty($oldNote) && !empty($validated['catatan_harian'])) {
-                $description = "Mengubah catatan harian:\nSEBELUM: " . substr($oldNote, 0, 50) . (strlen($oldNote) > 50 ? '...' : '') . "\nSESUDAH: " . substr($validated['catatan_harian'], 0, 50) . (strlen($validated['catatan_harian']) > 50 ? '...' : '');
+            // Jika catatan berubah (terisi → terisi berbeda)
+            else if (!empty($oldNote) && !empty($newNote) && $oldNote !== $newNote) {
+                $description = "📝 Mengubah catatan harian:\n\n🔴 SEBELUM:\n" . $oldNote . "\n\n🟢 SESUDAH:\n" . $newNote;
             }
-            // Jika catatan dihapus
-            else if (!empty($oldNote) && empty($validated['catatan_harian'])) {
-                $description = "Menghapus catatan harian: " . substr($oldNote, 0, 50) . (strlen($oldNote) > 50 ? '...' : '');
+            // Jika catatan dihapus (terisi → kosong)
+            else if (!empty($oldNote) && empty($newNote)) {
+                $description = "🗑️ Menghapus catatan harian:\n" . $oldNote;
             }
 
             ProgressLog::create([
                 'task_instance_id' => $task->id,
                 'tanggal' => now()->toDateString(),
                 'progress' => $task->progress ?? 0,
-                'catatan' => $validated['catatan_harian'] ?? '',
+                'catatan' => $newNote,
                 'activity_type' => 'note',
                 'description' => $description,
             ]);
