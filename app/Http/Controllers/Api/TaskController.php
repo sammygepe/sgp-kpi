@@ -280,7 +280,14 @@ class TaskController extends Controller
     public function myTasks(Request $request)
     {
         $tasks = TaskInstance::where('assignee_id', auth()->id())
-            ->with(['assignor', 'master', 'subtasks'])
+            ->with([
+                'assignor',
+                'master',
+                'subtasks',
+                'progressLogs' => function ($query) {
+                    $query->orderBy('created_at', 'desc');
+                }
+            ])
             ->paginate(20);
 
         return response()->json($tasks);
@@ -292,7 +299,15 @@ class TaskController extends Controller
         $user = auth()->user();
         $role = $user->role;
 
-        $query = TaskInstance::with(['assignee', 'assignor', 'master', 'subtasks']);
+        $query = TaskInstance::with([
+            'assignee',
+            'assignor',
+            'master',
+            'subtasks',
+            'progressLogs' => function ($query) {
+                $query->orderBy('created_at', 'desc');
+            }
+        ]);
 
         if ($role === 'atasan' || $role === 'admin') {
             // Lihat semua tugas dari bawahannya
@@ -342,7 +357,7 @@ class TaskController extends Controller
             'progress' => $task->progress,
             'catatan' => $task->catatan_harian ?? '',
             'activity_type' => 'subtask',
-            'description' => "Subtask '{$subtask->judul}' " . ($subtask->is_done ? 'selesai' : 'dibatalkan'),
+            'description' => "Subtask '" . $subtask->judul . "' " . ($subtask->is_done ? '✅ selesai' : '⬜ dibatalkan'),
         ]);
 
         return response()->json([
@@ -386,8 +401,14 @@ class TaskController extends Controller
 
     public function getTask($id)
     {
-        $task = TaskInstance::with(['subtasks', 'assignee', 'assignor', 'progressLogs'])
-            ->findOrFail($id);
+        $task = TaskInstance::with([
+            'subtasks',
+            'assignee',
+            'assignor',
+            'progressLogs' => function ($query) {
+                $query->orderBy('created_at', 'desc'); // <-- TERBARU DI ATAS
+            }
+        ])->findOrFail($id);
 
         // Cek apakah user punya akses (assignee atau atasan)
         if (auth()->id() !== $task->assignee_id && auth()->user()->role !== 'atasan') {
@@ -412,15 +433,30 @@ class TaskController extends Controller
         $oldNote = $task->catatan_harian;
         $task->update($validated);
 
-        // === AUTO LOG ===
+        // === AUTO LOG DENGAN PERUBAHAN ===
         if ($validated['catatan_harian'] !== $oldNote) {
+            $description = "Memperbarui catatan harian";
+
+            // Jika ada perubahan dari kosong → terisi
+            if (empty($oldNote) && !empty($validated['catatan_harian'])) {
+                $description = "Menambahkan catatan harian: " . substr($validated['catatan_harian'], 0, 50) . (strlen($validated['catatan_harian']) > 50 ? '...' : '');
+            }
+            // Jika ada perubahan dari terisi → berubah
+            else if (!empty($oldNote) && !empty($validated['catatan_harian'])) {
+                $description = "Mengubah catatan harian:\nSEBELUM: " . substr($oldNote, 0, 50) . (strlen($oldNote) > 50 ? '...' : '') . "\nSESUDAH: " . substr($validated['catatan_harian'], 0, 50) . (strlen($validated['catatan_harian']) > 50 ? '...' : '');
+            }
+            // Jika catatan dihapus
+            else if (!empty($oldNote) && empty($validated['catatan_harian'])) {
+                $description = "Menghapus catatan harian: " . substr($oldNote, 0, 50) . (strlen($oldNote) > 50 ? '...' : '');
+            }
+
             ProgressLog::create([
                 'task_instance_id' => $task->id,
                 'tanggal' => now()->toDateString(),
                 'progress' => $task->progress ?? 0,
-                'catatan' => $validated['catatan_harian'],
+                'catatan' => $validated['catatan_harian'] ?? '',
                 'activity_type' => 'note',
-                'description' => 'Memperbarui catatan harian',
+                'description' => $description,
             ]);
         }
 

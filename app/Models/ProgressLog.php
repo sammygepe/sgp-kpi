@@ -18,6 +18,7 @@ class ProgressLog extends Model
 
     protected $casts = [
         'tanggal' => 'date',
+        'created_at' => 'datetime',
         'progress' => 'integer',
     ];
 
