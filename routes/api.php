@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\TaskController;
 use App\Http\Controllers\Api\NotificationController;
+use App\Http\Controllers\Api\ReportController;
 use Illuminate\Support\Facades\Route;
 
 // Route publik (tanpa login)
@@ -42,4 +43,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // resubmitTask from rejected
     Route::post('/tasks/{id}/resubmit', [TaskController::class, 'resubmitTask']);
+
+    Route::get('/reports/staff', [ReportController::class, 'staffReport']);
+    Route::get('/reports/staff/{id}', [ReportController::class, 'staffDetail']);
 });
