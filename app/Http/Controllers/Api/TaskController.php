@@ -67,15 +67,39 @@ class TaskController extends Controller
             'generate_offset_days' => 'nullable|integer|min:0|max:365',
             'bobot' => 'required|integer|min:1|max:10',
             'deadline' => 'required|date|after_or_equal:today',
-            'subtasks' => 'nullable|array',
-            'subtasks.*.judul' => 'required|string|max:255',
             'tanggal_mulai' => 'nullable|date|before_or_equal:deadline',
             'subtasks' => 'nullable|array',
             'subtasks.*.judul' => 'required|string|max:255',
             'subtasks.*.porsi' => 'nullable|integer|min:0|max:100',
-
         ]);
 
+        // === VALIDASI SUBTASK WAJIB ===
+        $isProyek = $validated['jenis'] === 'proyek';
+        $isRutinMingguan = $validated['jenis'] === 'rutin' && $validated['recurrence_type'] === 'weekly';
+        $isRutinBulanan = $validated['jenis'] === 'rutin' && $validated['recurrence_type'] === 'monthly';
+        $isRutinTahunan = $validated['jenis'] === 'rutin' && $validated['recurrence_type'] === 'yearly';
+        $isSubtaskRequired = $isProyek || $isRutinMingguan || $isRutinBulanan || $isRutinTahunan;
+
+        $hasSubtasks = !empty($validated['subtasks']) && count($validated['subtasks']) > 0;
+
+        if ($isSubtaskRequired && !$hasSubtasks) {
+            return response()->json([
+                'message' => 'Subtask wajib diisi untuk tugas ini!'
+            ], 422);
+        }
+
+        // === VALIDASI TOTAL PORSI = 100 ===
+        if ($hasSubtasks) {
+            $totalPorsi = array_sum(array_column($validated['subtasks'], 'porsi'));
+            if ($totalPorsi !== 100) {
+                return response()->json([
+                    'message' => 'Total porsi subtask harus 100!',
+                    'total' => $totalPorsi
+                ], 422);
+            }
+        }
+
+        // === SIMPAN TASK ===
         $task = TaskInstance::create([
             'judul_spesifik' => $validated['judul_spesifik'],
             'deskripsi' => $validated['deskripsi'],
@@ -86,16 +110,16 @@ class TaskController extends Controller
             'generate_offset_days' => $validated['generate_offset_days'] ?? 0,
             'bobot' => $validated['bobot'],
             'deadline' => $validated['deadline'],
+            'tanggal_mulai' => $validated['tanggal_mulai'] ?? null,
             'assignee_id' => auth()->id(),
             'assignor_id' => auth()->id(),
             'initiation_type' => 'proposal',
             'status' => 'proposed',
             'nilai' => 100,
-            'tanggal_mulai' => $validated['tanggal_mulai'] ?? null,
         ]);
 
-        // Jika ada subtasks
-        if (!empty($validated['subtasks'])) {
+        // === SIMPAN SUBTASKS ===
+        if ($hasSubtasks) {
             foreach ($validated['subtasks'] as $subtask) {
                 Subtask::create([
                     'task_instance_id' => $task->id,
@@ -103,17 +127,6 @@ class TaskController extends Controller
                     'porsi' => $subtask['porsi'] ?? 0,
                     'is_done' => false,
                 ]);
-            }
-        }
-
-        // === VALIDASI TOTAL PORSI = 100 ===
-        if (!empty($validated['subtasks'])) {
-            $totalPorsi = array_sum(array_column($validated['subtasks'], 'porsi'));
-            if ($totalPorsi !== 100) {
-                return response()->json([
-                    'message' => 'Total porsi subtask harus 100!',
-                    'total' => $totalPorsi
-                ], 422);
             }
         }
 
