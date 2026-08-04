@@ -71,6 +71,7 @@ class TaskController extends Controller
             'subtasks' => 'nullable|array',
             'subtasks.*.judul' => 'required|string|max:255',
             'subtasks.*.porsi' => 'nullable|integer|min:0|max:100',
+            'status' => 'nullable|in:draft,proposed',
         ]);
 
         // === VALIDASI SUBTASK WAJIB ===
@@ -129,6 +130,7 @@ class TaskController extends Controller
             'initiation_type' => 'proposal',
             'status' => 'proposed',
             'nilai' => 100,
+            'status' => $validated['status'] ?? 'proposed',
         ]);
 
         // === SIMPAN SUBTASKS ===
