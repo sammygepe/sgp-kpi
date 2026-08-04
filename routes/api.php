@@ -53,4 +53,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/admin/users', [AdminController::class, 'store']);
     Route::put('/admin/users/{id}', [AdminController::class, 'update']);
     Route::delete('/admin/users/{id}', [AdminController::class, 'destroy']);
+
+    Route::get('/reports/export-pdf', [ReportController::class, 'exportPdf']);
+    Route::get('/reports/export-excel', [ReportController::class, 'exportExcel']);
 });
