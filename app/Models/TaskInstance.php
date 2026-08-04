@@ -8,6 +8,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class TaskInstance extends Model
 {
+    // === STATUSES (6 status, tanpa on_progress) ===
+    const STATUSES = ['draft', 'proposed', 'approved', 'submitted', 'completed', 'rejected'];
+
     protected $fillable = [
         'master_id',
         'judul_spesifik',
