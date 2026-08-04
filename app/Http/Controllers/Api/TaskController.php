@@ -70,6 +70,10 @@ class TaskController extends Controller
             'subtasks' => 'nullable|array',
             'subtasks.*.judul' => 'required|string|max:255',
             'tanggal_mulai' => 'nullable|date|before_or_equal:deadline',
+            'subtasks' => 'nullable|array',
+            'subtasks.*.judul' => 'required|string|max:255',
+            'subtasks.*.porsi' => 'nullable|integer|min:0|max:100',
+
         ]);
 
         $task = TaskInstance::create([
@@ -96,8 +100,20 @@ class TaskController extends Controller
                 Subtask::create([
                     'task_instance_id' => $task->id,
                     'judul' => $subtask['judul'],
+                    'porsi' => $subtask['porsi'] ?? 0,
                     'is_done' => false,
                 ]);
+            }
+        }
+
+        // === VALIDASI TOTAL PORSI = 100 ===
+        if (!empty($validated['subtasks'])) {
+            $totalPorsi = array_sum(array_column($validated['subtasks'], 'porsi'));
+            if ($totalPorsi !== 100) {
+                return response()->json([
+                    'message' => 'Total porsi subtask harus 100!',
+                    'total' => $totalPorsi
+                ], 422);
             }
         }
 
@@ -344,10 +360,10 @@ class TaskController extends Controller
         $subtask->is_done = !$subtask->is_done;
         $subtask->save();
 
-        // Update progress
-        $total = $task->subtasks()->count();
-        $done = $task->subtasks()->where('is_done', true)->count();
-        $task->progress = ($total > 0) ? round(($done / $total) * 100) : 0;
+        // === HITUNG PROGRES BERDASARKAN PORSI ===
+        $totalPorsi = $task->subtasks()->sum('porsi');
+        $donePorsi = $task->subtasks()->where('is_done', true)->sum('porsi');
+        $task->progress = $totalPorsi > 0 ? round(($donePorsi / $totalPorsi) * 100) : 0;
         $task->save();
 
         // === AUTO LOG ===

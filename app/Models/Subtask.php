@@ -10,6 +10,7 @@ class Subtask extends Model
     protected $fillable = [
         'task_instance_id',
         'judul',
+        'porsi',
         'is_done',
     ];
 

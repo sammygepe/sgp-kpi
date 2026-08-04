@@ -228,9 +228,9 @@ class TaskSeeder extends Seeder
             'nilai' => 100,
         ]);
         Subtask::insert([
-            ['task_instance_id' => $task->id, 'judul' => 'Siapkan laporan keuangan', 'is_done' => false],
-            ['task_instance_id' => $task->id, 'judul' => 'Siapkan bukti transaksi', 'is_done' => false],
-            ['task_instance_id' => $task->id, 'judul' => 'Koordinasi dengan auditor', 'is_done' => false],
+            ['task_instance_id' => $task->id, 'judul' => 'Siapkan laporan keuangan', 'porsi' => 40, 'is_done' => false],
+            ['task_instance_id' => $task->id, 'judul' => 'Siapkan bukti transaksi', 'porsi' => 30, 'is_done' => false],
+            ['task_instance_id' => $task->id, 'judul' => 'Koordinasi dengan auditor', 'porsi' => 30, 'is_done' => false],
         ]);
 
         // 5. Proyek
@@ -252,10 +252,10 @@ class TaskSeeder extends Seeder
             'nilai' => 100,
         ]);
         Subtask::insert([
-            ['task_instance_id' => $task->id, 'judul' => 'Analisis kebutuhan sistem', 'is_done' => false],
-            ['task_instance_id' => $task->id, 'judul' => 'Pilih vendor software', 'is_done' => false],
-            ['task_instance_id' => $task->id, 'judul' => 'Implementasi dan testing', 'is_done' => false],
-            ['task_instance_id' => $task->id, 'judul' => 'Training pengguna', 'is_done' => false],
+            ['task_instance_id' => $task->id, 'judul' => 'Analisis kebutuhan sistem', 'porsi' => 40, 'is_done' => false],
+            ['task_instance_id' => $task->id, 'judul' => 'Pilih vendor software', 'porsi' => 20, 'is_done' => false],
+            ['task_instance_id' => $task->id, 'judul' => 'Implementasi dan testing', 'porsi' => 30, 'is_done' => false],
+            ['task_instance_id' => $task->id, 'judul' => 'Training pengguna', 'porsi' => 10, 'is_done' => false],
         ]);
     }
 }
