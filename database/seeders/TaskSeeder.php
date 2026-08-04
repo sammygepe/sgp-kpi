@@ -22,7 +22,7 @@ class TaskSeeder extends Seeder
 
         // ==================== TUGAS UPIN (5) ====================
 
-        // 1. Rutin Harian
+        // 1. Rutin Harian (Subtask OPSIONAL, tapi tetap kita beri porsi)
         $task = TaskInstance::create([
             'judul_spesifik' => 'Laporan Penjualan Harian',
             'deskripsi' => 'Membuat laporan penjualan harian dari data toko',
@@ -40,9 +40,9 @@ class TaskSeeder extends Seeder
             'nilai' => 100,
         ]);
         Subtask::insert([
-            ['task_instance_id' => $task->id, 'judul' => 'Kumpulkan data penjualan toko', 'is_done' => false],
-            ['task_instance_id' => $task->id, 'judul' => 'Buat grafik penjualan', 'is_done' => false],
-            ['task_instance_id' => $task->id, 'judul' => 'Kirim laporan ke atasan', 'is_done' => false],
+            ['task_instance_id' => $task->id, 'judul' => 'Kumpulkan data penjualan toko', 'porsi' => 40, 'is_done' => false],
+            ['task_instance_id' => $task->id, 'judul' => 'Buat grafik penjualan', 'porsi' => 35, 'is_done' => false],
+            ['task_instance_id' => $task->id, 'judul' => 'Kirim laporan ke atasan', 'porsi' => 25, 'is_done' => false],
         ]);
 
         // 2. Rutin Mingguan
@@ -63,9 +63,9 @@ class TaskSeeder extends Seeder
             'nilai' => 100,
         ]);
         Subtask::insert([
-            ['task_instance_id' => $task->id, 'judul' => 'Hitung stok di gudang', 'is_done' => false],
-            ['task_instance_id' => $task->id, 'judul' => 'Catat barang masuk/keluar', 'is_done' => false],
-            ['task_instance_id' => $task->id, 'judul' => 'Kirim laporan ke atasan', 'is_done' => false],
+            ['task_instance_id' => $task->id, 'judul' => 'Hitung stok di gudang', 'porsi' => 40, 'is_done' => false],
+            ['task_instance_id' => $task->id, 'judul' => 'Catat barang masuk/keluar', 'porsi' => 35, 'is_done' => false],
+            ['task_instance_id' => $task->id, 'judul' => 'Kirim laporan ke atasan', 'porsi' => 25, 'is_done' => false],
         ]);
 
         // 3. Rutin Bulanan
@@ -86,9 +86,9 @@ class TaskSeeder extends Seeder
             'nilai' => 100,
         ]);
         Subtask::insert([
-            ['task_instance_id' => $task->id, 'judul' => 'Rekonsiliasi bank', 'is_done' => false],
-            ['task_instance_id' => $task->id, 'judul' => 'Buat laporan laba rugi', 'is_done' => false],
-            ['task_instance_id' => $task->id, 'judul' => 'Kirim ke direktur', 'is_done' => false],
+            ['task_instance_id' => $task->id, 'judul' => 'Rekonsiliasi bank', 'porsi' => 40, 'is_done' => false],
+            ['task_instance_id' => $task->id, 'judul' => 'Buat laporan laba rugi', 'porsi' => 35, 'is_done' => false],
+            ['task_instance_id' => $task->id, 'judul' => 'Kirim ke direktur', 'porsi' => 25, 'is_done' => false],
         ]);
 
         // 4. Rutin Tahunan
@@ -109,9 +109,9 @@ class TaskSeeder extends Seeder
             'nilai' => 100,
         ]);
         Subtask::insert([
-            ['task_instance_id' => $task->id, 'judul' => 'Siapkan berkas STNK', 'is_done' => false],
-            ['task_instance_id' => $task->id, 'judul' => 'Bayar pajak kendaraan', 'is_done' => false],
-            ['task_instance_id' => $task->id, 'judul' => 'Ambil STNK baru', 'is_done' => false],
+            ['task_instance_id' => $task->id, 'judul' => 'Siapkan berkas STNK', 'porsi' => 40, 'is_done' => false],
+            ['task_instance_id' => $task->id, 'judul' => 'Bayar pajak kendaraan', 'porsi' => 35, 'is_done' => false],
+            ['task_instance_id' => $task->id, 'judul' => 'Ambil STNK baru', 'porsi' => 25, 'is_done' => false],
         ]);
 
         // 5. Proyek
@@ -133,15 +133,15 @@ class TaskSeeder extends Seeder
             'nilai' => 100,
         ]);
         Subtask::insert([
-            ['task_instance_id' => $task->id, 'judul' => 'Desain database', 'is_done' => false],
-            ['task_instance_id' => $task->id, 'judul' => 'Buat backend Laravel', 'is_done' => false],
-            ['task_instance_id' => $task->id, 'judul' => 'Buat frontend Next.js', 'is_done' => false],
-            ['task_instance_id' => $task->id, 'judul' => 'Testing dan deployment', 'is_done' => false],
+            ['task_instance_id' => $task->id, 'judul' => 'Desain database', 'porsi' => 30, 'is_done' => false],
+            ['task_instance_id' => $task->id, 'judul' => 'Buat backend Laravel', 'porsi' => 30, 'is_done' => false],
+            ['task_instance_id' => $task->id, 'judul' => 'Buat frontend Next.js', 'porsi' => 25, 'is_done' => false],
+            ['task_instance_id' => $task->id, 'judul' => 'Testing dan deployment', 'porsi' => 15, 'is_done' => false],
         ]);
 
         // ==================== TUGAS IPIN (5) ====================
 
-        // 1. Rutin Harian
+        // 1. Rutin Harian (Subtask OPSIONAL, tapi tetap kita beri porsi)
         $task = TaskInstance::create([
             'judul_spesifik' => 'Laporan Pengeluaran Kas Harian',
             'deskripsi' => 'Mencatat semua pengeluaran kas harian',
@@ -159,9 +159,9 @@ class TaskSeeder extends Seeder
             'nilai' => 100,
         ]);
         Subtask::insert([
-            ['task_instance_id' => $task->id, 'judul' => 'Kumpulkan kwitansi', 'is_done' => false],
-            ['task_instance_id' => $task->id, 'judul' => 'Rekap pengeluaran per kategori', 'is_done' => false],
-            ['task_instance_id' => $task->id, 'judul' => 'Kirim laporan ke atasan', 'is_done' => false],
+            ['task_instance_id' => $task->id, 'judul' => 'Kumpulkan kwitansi', 'porsi' => 40, 'is_done' => false],
+            ['task_instance_id' => $task->id, 'judul' => 'Rekap pengeluaran per kategori', 'porsi' => 35, 'is_done' => false],
+            ['task_instance_id' => $task->id, 'judul' => 'Kirim laporan ke atasan', 'porsi' => 25, 'is_done' => false],
         ]);
 
         // 2. Rutin Mingguan
@@ -182,9 +182,9 @@ class TaskSeeder extends Seeder
             'nilai' => 100,
         ]);
         Subtask::insert([
-            ['task_instance_id' => $task->id, 'judul' => 'Hitung gaji per karyawan', 'is_done' => false],
-            ['task_instance_id' => $task->id, 'judul' => 'Hitung potongan pajak', 'is_done' => false],
-            ['task_instance_id' => $task->id, 'judul' => 'Kirim daftar gaji ke HRD', 'is_done' => false],
+            ['task_instance_id' => $task->id, 'judul' => 'Hitung gaji per karyawan', 'porsi' => 40, 'is_done' => false],
+            ['task_instance_id' => $task->id, 'judul' => 'Hitung potongan pajak', 'porsi' => 35, 'is_done' => false],
+            ['task_instance_id' => $task->id, 'judul' => 'Kirim daftar gaji ke HRD', 'porsi' => 25, 'is_done' => false],
         ]);
 
         // 3. Rutin Bulanan
@@ -205,9 +205,9 @@ class TaskSeeder extends Seeder
             'nilai' => 100,
         ]);
         Subtask::insert([
-            ['task_instance_id' => $task->id, 'judul' => 'Kumpulkan data pajak', 'is_done' => false],
-            ['task_instance_id' => $task->id, 'judul' => 'Hitung PPN dan PPH', 'is_done' => false],
-            ['task_instance_id' => $task->id, 'judul' => 'Kirim laporan ke kantor pajak', 'is_done' => false],
+            ['task_instance_id' => $task->id, 'judul' => 'Kumpulkan data pajak', 'porsi' => 40, 'is_done' => false],
+            ['task_instance_id' => $task->id, 'judul' => 'Hitung PPN dan PPH', 'porsi' => 35, 'is_done' => false],
+            ['task_instance_id' => $task->id, 'judul' => 'Kirim laporan ke kantor pajak', 'porsi' => 25, 'is_done' => false],
         ]);
 
         // 4. Rutin Tahunan
