@@ -88,12 +88,25 @@ class TaskController extends Controller
             ], 422);
         }
 
-        // === VALIDASI TOTAL PORSI = 100 ===
+        // === VALIDASI TOTAL PORSI = 100 & SETIAP SUBTASK > 0 ===
         if ($hasSubtasks) {
-            $totalPorsi = array_sum(array_column($validated['subtasks'], 'porsi'));
+            $porsiArray = array_column($validated['subtasks'], 'porsi');
+
+            // 1. Cek setiap subtask memiliki porsi > 0
+            foreach ($validated['subtasks'] as $index => $subtask) {
+                $porsi = $subtask['porsi'] ?? 0;
+                if ($porsi <= 0) {
+                    return response()->json([
+                        'message' => "Subtask '{$subtask['judul']}' harus memiliki porsi lebih dari 0!",
+                    ], 422);
+                }
+            }
+
+            // 2. Cek total porsi
+            $totalPorsi = array_sum($porsiArray);
             if ($totalPorsi !== 100) {
                 return response()->json([
-                    'message' => 'Total porsi subtask harus 100!',
+                    'message' => "Total porsi subtask harus 100% (saat ini: {$totalPorsi}%)",
                     'total' => $totalPorsi
                 ], 422);
             }
