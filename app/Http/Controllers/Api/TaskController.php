@@ -573,4 +573,102 @@ class TaskController extends Controller
             'data' => $newTask->load('subtasks'),
         ], 201);
     }
+
+    public function updateDraft(Request $request, $id)
+    {
+        $task = TaskInstance::findOrFail($id);
+
+        // Pastikan draft milik staf yang login
+        if ($task->assignee_id !== auth()->id()) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        // Pastikan statusnya masih draft
+        if ($task->status !== 'draft') {
+            return response()->json(['message' => 'Task is not draft'], 422);
+        }
+
+        $validated = $request->validate([
+            'judul_spesifik' => 'required|string|max:255',
+            'deskripsi' => 'nullable|string',
+            'jenis' => 'required|in:rutin,proyek',
+            'recurrence_type' => 'nullable|in:daily,weekly,monthly,yearly',
+            'recurrence_day' => 'nullable|integer|min:1|max:31',
+            'recurrence_month' => 'nullable|integer|min:1|max:12',
+            'generate_offset_days' => 'nullable|integer|min:0|max:365',
+            'bobot' => 'required|integer|min:1|max:10',
+            'deadline' => 'required|date|after_or_equal:today',
+            'tanggal_mulai' => 'nullable|date|before_or_equal:deadline',
+            'subtasks' => 'nullable|array',
+            'subtasks.*.judul' => 'required|string|max:255',
+            'subtasks.*.porsi' => 'nullable|integer|min:0|max:100',
+        ]);
+
+        // === VALIDASI SUBTASK WAJIB ===
+        $isProyek = $validated['jenis'] === 'proyek';
+        $isRutinMingguan = $validated['jenis'] === 'rutin' && $validated['recurrence_type'] === 'weekly';
+        $isRutinBulanan = $validated['jenis'] === 'rutin' && $validated['recurrence_type'] === 'monthly';
+        $isRutinTahunan = $validated['jenis'] === 'rutin' && $validated['recurrence_type'] === 'yearly';
+        $isSubtaskRequired = $isProyek || $isRutinMingguan || $isRutinBulanan || $isRutinTahunan;
+
+        $hasSubtasks = !empty($validated['subtasks']) && count($validated['subtasks']) > 0;
+
+        if ($isSubtaskRequired && !$hasSubtasks) {
+            return response()->json(['message' => 'Subtask wajib diisi untuk tugas ini!'], 422);
+        }
+
+        // === VALIDASI TOTAL PORSI = 100 & SETIAP SUBTASK > 0 ===
+        if ($hasSubtasks) {
+            $porsiArray = array_column($validated['subtasks'], 'porsi');
+            foreach ($validated['subtasks'] as $index => $subtask) {
+                $porsi = $subtask['porsi'] ?? 0;
+                if ($porsi <= 0) {
+                    return response()->json([
+                        'message' => "Subtask '{$subtask['judul']}' harus memiliki porsi lebih dari 0!",
+                    ], 422);
+                }
+            }
+            $totalPorsi = array_sum($porsiArray);
+            if ($totalPorsi !== 100) {
+                return response()->json([
+                    'message' => "Total porsi subtask harus 100% (saat ini: {$totalPorsi}%)",
+                    'total' => $totalPorsi
+                ], 422);
+            }
+        }
+
+        // === UPDATE TASK ===
+        $task->update([
+            'judul_spesifik' => $validated['judul_spesifik'],
+            'deskripsi' => $validated['deskripsi'],
+            'jenis' => $validated['jenis'],
+            'recurrence_type' => $validated['recurrence_type'] ?? null,
+            'recurrence_day' => $validated['recurrence_day'] ?? null,
+            'recurrence_month' => $validated['recurrence_month'] ?? null,
+            'generate_offset_days' => $validated['generate_offset_days'] ?? 0,
+            'bobot' => $validated['bobot'],
+            'deadline' => $validated['deadline'],
+            'tanggal_mulai' => $validated['tanggal_mulai'] ?? null,
+        ]);
+
+        // === UPDATE SUBTASKS ===
+        if ($hasSubtasks) {
+            // Hapus subtask lama
+            $task->subtasks()->delete();
+            // Buat subtask baru
+            foreach ($validated['subtasks'] as $subtask) {
+                Subtask::create([
+                    'task_instance_id' => $task->id,
+                    'judul' => $subtask['judul'],
+                    'porsi' => $subtask['porsi'] ?? 0,
+                    'is_done' => false,
+                ]);
+            }
+        }
+
+        return response()->json([
+            'message' => 'Draft updated successfully',
+            'data' => $task->load('subtasks'),
+        ], 200);
+    }
 }
