@@ -25,8 +25,8 @@ class SendReminders extends Command
         foreach ($tasksH1 as $task) {
             $this->createNotification(
                 $task->assignee_id,
-                '⏰ Deadline Besok!',
-                "Tugas '{$task->judul_spesifik}' deadline besok ({$tomorrow}). Jangan lupa selesaikan!",
+                '[Reminder] Deadline Tomorrow!',
+                "Task '{$task->judul_spesifik}' deadline is tomorrow ({$tomorrow}). Please complete it!",
                 'warning',
                 "/tasks/{$task->id}"
             );
@@ -40,8 +40,8 @@ class SendReminders extends Command
         foreach ($tasksH0 as $task) {
             $this->createNotification(
                 $task->assignee_id,
-                '🔥 Deadline Hari Ini!',
-                "Tugas '{$task->judul_spesifik}' deadline hari ini ({$today}). Segera selesaikan!",
+                '[Reminder] Deadline Today!',
+                "Task '{$task->judul_spesifik}' deadline is today ({$today}). Please complete it!",
                 'danger',
                 "/tasks/{$task->id}"
             );
@@ -56,8 +56,8 @@ class SendReminders extends Command
             $days = now()->diffInDays($task->deadline);
             $this->createNotification(
                 $task->assignee_id,
-                '⚠️ Tugas Terlambat!',
-                "Tugas '{$task->judul_spesifik}' sudah terlambat {$days} hari. Segera selesaikan!",
+                '[Reminder] Task Overdue!',
+                "Task '{$task->judul_spesifik}' is overdue by {$days} day(s). Please complete it!",
                 'danger',
                 "/tasks/{$task->id}"
             );
@@ -67,11 +67,9 @@ class SendReminders extends Command
         $proposedTasks = TaskInstance::where('status', 'proposed')->get();
 
         if ($proposedTasks->count() > 0) {
-            // Ambil semua atasan
             $supervisors = User::where('role', 'atasan')->orWhere('role', 'supervisor')->get();
 
             foreach ($supervisors as $supervisor) {
-                // Hitung usulan dari bawahannya saja
                 $subordinateIds = User::where('supervisor_id', $supervisor->id)->pluck('id');
                 $count = TaskInstance::where('status', 'proposed')
                     ->whereIn('assignee_id', $subordinateIds)
@@ -80,8 +78,8 @@ class SendReminders extends Command
                 if ($count > 0) {
                     $this->createNotification(
                         $supervisor->id,
-                        '📩 Usulan Menunggu Persetujuan',
-                        "Ada {$count} usulan tugas dari staf Anda yang menunggu persetujuan.",
+                        '[Reminder] Pending Approval',
+                        "There are {$count} task proposal(s) from your staff waiting for approval.",
                         'info',
                         '/dashboard/atasan?tab=proposed'
                     );
@@ -104,8 +102,8 @@ class SendReminders extends Command
                 if ($count > 0) {
                     $this->createNotification(
                         $supervisor->id,
-                        '📊 Tugas Menunggu Nilai',
-                        "Ada {$count} tugas dari staf Anda yang sudah disubmit dan menunggu penilaian.",
+                        '[Reminder] Pending Scoring',
+                        "There are {$count} task(s) from your staff waiting for scoring.",
                         'info',
                         '/dashboard/atasan?tab=submitted'
                     );
