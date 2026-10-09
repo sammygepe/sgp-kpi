@@ -58,4 +58,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/reports/export-excel', [ReportController::class, 'exportExcel']);
 
     Route::put('/tasks/draft/{id}', [TaskController::class, 'updateDraft']);
+
+    Route::get('/my-proposals', [TaskController::class, 'myProposals']);
+    Route::get('/subordinate-proposals', [TaskController::class, 'subordinateProposals']);
 });

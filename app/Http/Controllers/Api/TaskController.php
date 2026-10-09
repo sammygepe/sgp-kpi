@@ -373,8 +373,44 @@ class TaskController extends Controller
         return response()->json($tasks);
     }
 
-    // === SUBTASK ===
+    // === USULAN MILIK SENDIRI ===
+    public function myProposals(Request $request)
+    {
+        $tasks = TaskInstance::with(['subtasks', 'assignor'])
+            ->where('assignee_id', auth()->id())
+            ->whereIn('status', ['draft', 'proposed', 'rejected', 'approved'])
+            ->orderBy('updated_at', 'desc')
+            ->get();
 
+        return response()->json([
+            'data' => $tasks
+        ]);
+    }
+
+    // === USULAN DARI BAWAHAN (khusus atasan) ===
+    public function subordinateProposals(Request $request)
+    {
+        $user = auth()->user();
+
+        if (!in_array($user->role, ['atasan', 'supervisor', 'admin'])) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        // Ambil ID semua bawahan langsung
+        $subordinateIds = \App\Models\User::where('supervisor_id', $user->id)->pluck('id');
+
+        $tasks = TaskInstance::with(['subtasks', 'assignee'])
+            ->whereIn('assignee_id', $subordinateIds)
+            ->whereIn('status', ['proposed', 'approved', 'rejected'])
+            ->orderBy('updated_at', 'desc')
+            ->get();
+
+        return response()->json([
+            'data' => $tasks
+        ]);
+    }
+
+    // === SUBTASK ===
     // Centang subtask (auto-save)
     public function toggleSubtask(Request $request, $subtaskId)
     {
