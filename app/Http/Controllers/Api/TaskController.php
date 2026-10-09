@@ -11,6 +11,7 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
+use Illuminate\Validation\Rule;
 
 class TaskController extends Controller
 {
@@ -58,7 +59,14 @@ class TaskController extends Controller
     public function proposeTask(Request $request)
     {
         $validated = $request->validate([
-            'judul_spesifik' => 'required|string|max:255',
+            'judul_spesifik' => [
+                'required',
+                'string',
+                'max:255',
+                Rule::unique('task_instances', 'judul_spesifik')
+                    ->where('assignee_id', auth()->id())
+                    ->whereIn('status', ['draft', 'proposed', 'approved', 'submitted']),
+            ],
             'deskripsi' => 'nullable|string',
             'jenis' => 'required|in:rutin,proyek',
             'recurrence_type' => 'nullable|in:daily,weekly,monthly,yearly',
@@ -625,7 +633,15 @@ class TaskController extends Controller
         }
 
         $validated = $request->validate([
-            'judul_spesifik' => 'required|string|max:255',
+            'judul_spesifik' => [
+                'required',
+                'string',
+                'max:255',
+                Rule::unique('task_instances', 'judul_spesifik')
+                    ->where('assignee_id', auth()->id())
+                    ->whereIn('status', ['draft', 'proposed', 'approved', 'submitted'])
+                    ->ignore($id), // <-- Kecualikan draft yang sedang di-edit
+            ],
             'deskripsi' => 'nullable|string',
             'jenis' => 'required|in:rutin,proyek',
             'recurrence_type' => 'nullable|in:daily,weekly,monthly,yearly',
