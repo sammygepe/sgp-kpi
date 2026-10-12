@@ -711,9 +711,10 @@ class TaskController extends Controller
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
-        // Pastikan statusnya masih draft
-        if ($task->status !== 'draft') {
-            return response()->json(['message' => 'Task is not draft'], 422);
+        // Draft hanya boleh diubah kalau statusnya masih draft atau proposed
+        // (proposed = saat user klik Ajukan Tugas dari draft)
+        if (!in_array($task->status, ['draft', 'proposed'])) {
+            return response()->json(['message' => 'Task tidak bisa diubah lagi'], 422);
         }
 
         $validated = $request->validate([
@@ -724,7 +725,7 @@ class TaskController extends Controller
                 Rule::unique('task_instances', 'judul_spesifik')
                     ->where('assignee_id', auth()->id())
                     ->whereIn('status', ['draft', 'proposed', 'approved', 'submitted'])
-                    ->ignore($id), // <-- Kecualikan draft yang sedang di-edit
+                    ->ignore($id),
             ],
             'deskripsi' => 'nullable|string',
             'jenis' => 'required|in:rutin,proyek',
@@ -735,41 +736,45 @@ class TaskController extends Controller
             'bobot' => 'required|integer|min:1|max:10',
             'deadline' => 'required|date|after_or_equal:today',
             'tanggal_mulai' => 'nullable|date|before_or_equal:deadline',
+            'status' => 'nullable|in:draft,proposed', // <-- status opsional
             'subtasks' => 'nullable|array',
             'subtasks.*.judul' => 'required|string|max:255',
             'subtasks.*.porsi' => 'nullable|integer|min:0|max:100',
         ]);
 
-        // === VALIDASI SUBTASK WAJIB ===
-        $isProyek = $validated['jenis'] === 'proyek';
-        $isRutinMingguan = $validated['jenis'] === 'rutin' && $validated['recurrence_type'] === 'weekly';
-        $isRutinBulanan = $validated['jenis'] === 'rutin' && $validated['recurrence_type'] === 'monthly';
-        $isRutinTahunan = $validated['jenis'] === 'rutin' && $validated['recurrence_type'] === 'yearly';
-        $isSubtaskRequired = $isProyek || $isRutinMingguan || $isRutinBulanan || $isRutinTahunan;
+        // Tentukan status baru
+        $newStatus = $validated['status'] ?? $task->status;
 
-        $hasSubtasks = !empty($validated['subtasks']) && count($validated['subtasks']) > 0;
+        // === VALIDASI SUBTASK WAJIB (hanya kalau mau jadi proposed) ===
+        if ($newStatus === 'proposed') {
+            $isProyek = $validated['jenis'] === 'proyek';
+            $isRutinMingguan = $validated['jenis'] === 'rutin' && $validated['recurrence_type'] === 'weekly';
+            $isRutinBulanan = $validated['jenis'] === 'rutin' && $validated['recurrence_type'] === 'monthly';
+            $isRutinTahunan = $validated['jenis'] === 'rutin' && $validated['recurrence_type'] === 'yearly';
+            $isSubtaskRequired = $isProyek || $isRutinMingguan || $isRutinBulanan || $isRutinTahunan;
 
-        if ($isSubtaskRequired && !$hasSubtasks) {
-            return response()->json(['message' => 'Subtask wajib diisi untuk tugas ini!'], 422);
-        }
+            $hasSubtasks = !empty($validated['subtasks']) && count($validated['subtasks']) > 0;
 
-        // === VALIDASI TOTAL PORSI = 100 & SETIAP SUBTASK > 0 ===
-        if ($hasSubtasks) {
-            $porsiArray = array_column($validated['subtasks'], 'porsi');
-            foreach ($validated['subtasks'] as $index => $subtask) {
-                $porsi = $subtask['porsi'] ?? 0;
-                if ($porsi <= 0) {
+            if ($isSubtaskRequired && !$hasSubtasks) {
+                return response()->json(['message' => 'Subtask wajib diisi untuk tugas ini!'], 422);
+            }
+
+            if ($hasSubtasks) {
+                foreach ($validated['subtasks'] as $subtask) {
+                    $porsi = $subtask['porsi'] ?? 0;
+                    if ($porsi <= 0) {
+                        return response()->json([
+                            'message' => "Subtask '{$subtask['judul']}' harus memiliki porsi lebih dari 0!",
+                        ], 422);
+                    }
+                }
+                $totalPorsi = array_sum(array_column($validated['subtasks'], 'porsi'));
+                if ($totalPorsi !== 100) {
                     return response()->json([
-                        'message' => "Subtask '{$subtask['judul']}' harus memiliki porsi lebih dari 0!",
+                        'message' => "Total porsi subtask harus 100% (saat ini: {$totalPorsi}%)",
+                        'total' => $totalPorsi
                     ], 422);
                 }
-            }
-            $totalPorsi = array_sum($porsiArray);
-            if ($totalPorsi !== 100) {
-                return response()->json([
-                    'message' => "Total porsi subtask harus 100% (saat ini: {$totalPorsi}%)",
-                    'total' => $totalPorsi
-                ], 422);
             }
         }
 
@@ -785,25 +790,28 @@ class TaskController extends Controller
             'bobot' => $validated['bobot'],
             'deadline' => $validated['deadline'],
             'tanggal_mulai' => $validated['tanggal_mulai'] ?? null,
+            'status' => $newStatus, // <-- update status
         ]);
 
         // === UPDATE SUBTASKS ===
-        if ($hasSubtasks) {
-            // Hapus subtask lama
+        if (array_key_exists('subtasks', $validated)) {
             $task->subtasks()->delete();
-            // Buat subtask baru
-            foreach ($validated['subtasks'] as $subtask) {
-                Subtask::create([
-                    'task_instance_id' => $task->id,
-                    'judul' => $subtask['judul'],
-                    'porsi' => $subtask['porsi'] ?? 0,
-                    'is_done' => false,
-                ]);
+            if (!empty($validated['subtasks'])) {
+                foreach ($validated['subtasks'] as $subtask) {
+                    Subtask::create([
+                        'task_instance_id' => $task->id,
+                        'judul' => $subtask['judul'],
+                        'porsi' => $subtask['porsi'] ?? 0,
+                        'is_done' => false,
+                    ]);
+                }
             }
         }
 
         return response()->json([
-            'message' => 'Draft updated successfully',
+            'message' => $newStatus === 'proposed'
+                ? 'Task submitted as proposed'
+                : 'Draft updated successfully',
             'data' => $task->load('subtasks'),
         ], 200);
     }
