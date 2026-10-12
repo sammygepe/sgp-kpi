@@ -555,6 +555,90 @@ class TaskController extends Controller
         ]);
     }
 
+    public function updateProgress(Request $request, $taskId)
+    {
+        $task = TaskInstance::findOrFail($taskId);
+
+        if (auth()->id() !== $task->assignee_id) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        if (in_array($task->status, ['submitted', 'completed'])) {
+            return response()->json(['message' => 'Task sudah disubmit, tidak bisa diubah'], 422);
+        }
+
+        $validated = $request->validate([
+            'catatan_harian' => 'nullable|string',
+            'subtasks' => 'nullable|array',
+            'subtasks.*.id' => 'required|integer|exists:subtasks,id',
+            'subtasks.*.is_done' => 'required|boolean',
+        ]);
+
+        $changes = [];
+
+        // === CATATAN HARIAN ===
+        $oldNote = $task->catatan_harian ?? '';
+        $newNote = $validated['catatan_harian'] ?? '';
+
+        if ($newNote !== $oldNote) {
+            $task->catatan_harian = $newNote;
+            if (empty($oldNote) && !empty($newNote)) {
+                $changes[] = "Catatan harian ditambahkan";
+            } elseif (!empty($oldNote) && !empty($newNote)) {
+                $changes[] = "Catatan harian diubah";
+            } elseif (!empty($oldNote) && empty($newNote)) {
+                $changes[] = "Catatan harian dihapus";
+            }
+        }
+
+        // === SUBTASK ===
+        $subtaskChanges = [];
+        if (!empty($validated['subtasks'])) {
+            foreach ($validated['subtasks'] as $subtaskData) {
+                $subtask = Subtask::where('id', $subtaskData['id'])
+                    ->where('task_instance_id', $task->id)
+                    ->first();
+
+                if (!$subtask) continue;
+
+                if ($subtask->is_done !== $subtaskData['is_done']) {
+                    $subtask->is_done = $subtaskData['is_done'];
+                    $subtask->save();
+
+                    $subtaskChanges[] = $subtask->judul . ' ' . ($subtask->is_done ? '✅' : '⬜');
+                }
+            }
+        }
+
+        if (!empty($subtaskChanges)) {
+            $changes[] = "Checklist diubah: " . implode(', ', $subtaskChanges);
+        }
+
+        // === HITUNG PROGRESS ===
+        $totalPorsi = $task->subtasks()->sum('porsi');
+        $donePorsi = $task->subtasks()->where('is_done', true)->sum('porsi');
+        $task->progress = $totalPorsi > 0 ? round(($donePorsi / $totalPorsi) * 100) : 0;
+        $task->save();
+
+        // === 1 LOG GABUNGAN ===
+        if (!empty($changes)) {
+            ProgressLog::create([
+                'task_instance_id' => $task->id,
+                'tanggal' => now()->toDateString(),
+                'progress' => $task->progress,
+                'catatan' => $task->catatan_harian ?? '',
+                'activity_type' => 'update',
+                'description' => implode("\n", $changes),
+            ]);
+        }
+
+        return response()->json([
+            'message' => 'Progress updated successfully',
+            'data' => $task->load('subtasks'),
+            'progress' => $task->progress,
+        ]);
+    }
+
     public function resubmitTask(Request $request, $id)
     {
         $oldTask = TaskInstance::findOrFail($id);

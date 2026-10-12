@@ -66,7 +66,7 @@ class TaskInstance extends Model
     // Relasi: TaskInstance memiliki banyak Subtask
     public function subtasks(): HasMany
     {
-        return $this->hasMany(Subtask::class, 'task_instance_id');
+        return $this->hasMany(Subtask::class, 'task_instance_id')->orderBy('id', 'asc');
     }
 
     // Relasi: TaskInstance memiliki banyak ProgressLog

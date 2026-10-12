@@ -61,4 +61,6 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::get('/my-proposals', [TaskController::class, 'myProposals']);
     Route::get('/subordinate-proposals', [TaskController::class, 'subordinateProposals']);
+
+    Route::put('/tasks/{id}/update-progress', [TaskController::class, 'updateProgress']);
 });
