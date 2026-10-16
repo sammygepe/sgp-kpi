@@ -1,12 +1,6 @@
 <?php
 
-use Illuminate\Foundation\Inspiring;
-use Illuminate\Support\Facades\Artisan;
-
-Artisan::command('inspire', function () {
-    $this->comment(Inspiring::quote());
-})->purpose('Display an inspiring quote');
-
 use Illuminate\Support\Facades\Schedule;
 
-Schedule::command('reminders:send')->dailyAt('08:00');
+// Auto-close periode KPI (jalan setiap hari jam 00:05)
+Schedule::command('kpi:auto-close')->dailyAt('00:05');

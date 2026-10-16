@@ -26,6 +26,7 @@ class TaskInstance extends Model
         'assignor_id',
         'initiation_type',
         'status',
+        'kpi_period_id',
         'progress',
         'tanggal_submit',
         'submitted_at',
@@ -79,5 +80,10 @@ class TaskInstance extends Model
     public function auditLogs(): HasMany
     {
         return $this->hasMany(AuditLog::class, 'task_instance_id');
+    }
+
+    public function kpiPeriod(): BelongsTo
+    {
+        return $this->belongsTo(KpiPeriod::class, 'kpi_period_id');
     }
 }
